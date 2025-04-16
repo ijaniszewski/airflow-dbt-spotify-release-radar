@@ -5,6 +5,7 @@ from datetime import datetime
 import mysql.connector
 from airflow.datasets import Dataset
 from airflow.decorators import dag, task
+from airflow.operators.bash import BashOperator
 
 
 @dag(
@@ -75,7 +76,7 @@ def process_spotify_data_dag():
         for song in songs:
             cursor.execute(
                 """
-                INSERT INTO spotify_tracks (week_number, artist, name, added_at)
+                INSERT INTO spotify_tracks_raw (week_number, artist, name, added_at)
                 VALUES (%s, %s, %s, NOW())
                 """,
                 (week_number, song["artist"], song["name"]),
@@ -85,10 +86,15 @@ def process_spotify_data_dag():
         cursor.close()
         connection.close()
 
+    run_dbt = BashOperator(
+        task_id="run_dbt_transform",
+        bash_command="cd /opt/airflow/dbt/spotify_dbt && dbt run",
+    )
+
     raw_data = load_json_file()
     transformed = transform_data(raw_data)
     load_data(transformed)
-    store_in_mysql(transformed)
+    store_in_mysql(transformed) >> run_dbt
 
 
 process_spotify_data = process_spotify_data_dag()

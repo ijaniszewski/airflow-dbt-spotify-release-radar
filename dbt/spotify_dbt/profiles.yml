@@ -1,0 +1,12 @@
+spotify_dbt:
+  target: dev
+  database: spotify
+  outputs:
+    dev:
+      type: mysql
+      server: mysql
+      user: airflow
+      schema: spotify
+      password: airflow
+      port: 3306
+      

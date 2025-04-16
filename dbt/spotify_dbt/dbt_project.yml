@@ -1,0 +1,17 @@
+name: 'spotify_dbt'
+version: '1.0'
+profile: 'spotify_dbt'
+
+config-version: 2
+
+model-paths: ["models"]
+
+models:
+  spotify_dbt:
+    materialized: table
+    # a bug?
+    # https://stackoverflow.com/questions/74001834/dbt-1046-3d000-no-database-selected
+    # without it 1046 (3D000): No database selected error
+    +pre-hook:
+      - "USE {{ target.schema }}"
+
