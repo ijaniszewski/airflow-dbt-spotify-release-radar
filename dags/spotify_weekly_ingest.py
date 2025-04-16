@@ -8,9 +8,6 @@ from airflow.decorators import dag, task
 from spotipy.oauth2 import SpotifyClientCredentials
 
 
-raw_data_file = 
-
-
 @dag(
     dag_id="spotify_weekly_ingest",
     start_date=datetime(2021, 1, 1),

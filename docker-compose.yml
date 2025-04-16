@@ -67,5 +67,20 @@ services:
       --username admin --firstname Admin --lastname User --role Admin \
       --email admin@example.com --password admin"
 
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: spotify
+      MYSQL_USER: airflow
+      MYSQL_PASSWORD: airflow
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-db-volume:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+
 volumes:
   postgres-db-volume:
+  mysql-db-volume:

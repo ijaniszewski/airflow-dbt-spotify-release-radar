@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 
+import mysql.connector
 from airflow.datasets import Dataset
 from airflow.decorators import dag, task
 
@@ -58,9 +59,36 @@ def process_spotify_data_dag():
         for song in songs:
             print(f"{song['artist']} : {song['name']}")
 
+    @task
+    def store_in_mysql(data):
+        connection = mysql.connector.connect(
+            host="mysql",
+            user="airflow",
+            password="airflow",
+            database="spotify",
+        )
+        cursor = connection.cursor()
+
+        week_number = data["week_number"]
+        songs = data["songs"]
+
+        for song in songs:
+            cursor.execute(
+                """
+                INSERT INTO spotify_tracks (week_number, artist, name, added_at)
+                VALUES (%s, %s, %s, NOW())
+                """,
+                (week_number, song["artist"], song["name"]),
+            )
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
     raw_data = load_json_file()
     transformed = transform_data(raw_data)
     load_data(transformed)
+    store_in_mysql(transformed)
 
 
 process_spotify_data = process_spotify_data_dag()
