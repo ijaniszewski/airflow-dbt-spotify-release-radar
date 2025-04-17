@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import mysql.connector
 from airflow.datasets import Dataset
@@ -32,16 +32,23 @@ def process_spotify_data_dag():
         )
         if not files:
             raise FileNotFoundError("No raw data files found.")
-        file_path = os.path.join(folder, files[0])
+        file_name = files[0]  # Example: spotify_data_2025-04-17T12:31:17.json
+        file_path = os.path.join(folder, file_name)
+
         with open(file_path, "r") as f:
             data = json.load(f)
-        return data
+
+        return {"file_name": file_name, "data": data}
 
     @task
-    def transform_data(playlist_data):
-        added_txt = playlist_data["items"][0]["added_at"]
-        added_dt = datetime.strptime(added_txt, "%Y-%m-%dT%H:%M:%SZ")
-        week_number = added_dt.isocalendar().week
+    def transform_data(loaded):
+        file_name = loaded["file_name"]
+        playlist_data = loaded["data"]
+
+        # Extract _load_ts from filename
+        ts_str = file_name.replace("spotify_data_", "").replace(".json", "")
+        _load_ts = datetime.strptime(ts_str, "%Y-%m-%dT%H:%M:%S")
+
         songs = []
         for item in playlist_data["items"]:
             song = {
@@ -50,13 +57,12 @@ def process_spotify_data_dag():
                 "artist": item["track"]["artists"][0]["name"],
             }
             songs.append(song)
-        return {"week_number": week_number, "songs": songs}
+
+        return {"_load_ts": _load_ts.isoformat(), "songs": songs}
 
     @task
-    def load_data(data):
-        week_number = data["week_number"]
+    def log_songs(data):
         songs = data["songs"]
-        print(f"For week number: {week_number}:")
         for song in songs:
             print(f"{song['artist']} : {song['name']}")
 
@@ -70,16 +76,15 @@ def process_spotify_data_dag():
         )
         cursor = connection.cursor()
 
-        week_number = data["week_number"]
         songs = data["songs"]
 
         for song in songs:
             cursor.execute(
                 """
-                INSERT INTO spotify_tracks_raw (week_number, artist, name, added_at)
-                VALUES (%s, %s, %s, NOW())
+                INSERT INTO source_spotify_tracks (artist, name, _load_ts)
+                VALUES (%s, %s, %s)
                 """,
-                (week_number, song["artist"], song["name"]),
+                (song["artist"], song["name"], data["_load_ts"]),
             )
 
         connection.commit()
@@ -88,12 +93,12 @@ def process_spotify_data_dag():
 
     run_dbt = BashOperator(
         task_id="run_dbt_transform",
-        bash_command="cd /opt/airflow/dbt/spotify_dbt && dbt run",
+        bash_command="cd /opt/airflow/dbt/spotify_dbt && dbt build",
     )
 
     raw_data = load_json_file()
     transformed = transform_data(raw_data)
-    load_data(transformed)
+    log_songs(transformed)
     store_in_mysql(transformed) >> run_dbt
 
 

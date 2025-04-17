@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: spotify
+    description: >
+      Source data for Spotify playlist tracks, ingested from external APIs 
+      via Airflow and stored in the `source_spotify_tracks` table.
+      Each row represents a track added to a playlist, along with metadata 
+      and the ingestion timestamp.
+
+    schema: spotify
+
+    tables:
+      - name: source_spotify_tracks
+        description: >
+          Raw ingestion table containing weekly track data pulled from Spotify.
+          This table is loaded directly by the Airflow ingestion DAG and serves 
+          as the foundation for all downstream models (bronze, silver, gold).
+        
+        columns:
+          - name: id
+            description: "Auto-incremented primary key for each ingested row."
+            tests: [not_null, unique]
+
+          - name: artist
+            description: "Primary artist associated with the track."
+            tests: [not_null]
+
+          - name: name
+            description: "Title of the track."
+            tests: [not_null]
+
+          - name: _load_ts
+            description: "Timestamp when the record was inserted into the source table by Airflow."
+            tests: [not_null]

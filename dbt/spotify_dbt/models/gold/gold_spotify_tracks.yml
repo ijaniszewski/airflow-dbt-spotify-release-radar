@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: gold_spotify_tracks
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - artist
+            - name
+    description: >
+      Gold-level model that contains a clean, deduplicated list of songs (artist and title) 
+      taken from the most recent available week in the dataset.
+      This is based on the highest year and week_number combination from the silver model.
+
+    columns:
+      - name: artist
+        description: "Name of the primary artist for the track."
+        tests:
+          - not_null
+
+      - name: name
+        description: "Title of the track."
+        tests:
+          - not_null
+

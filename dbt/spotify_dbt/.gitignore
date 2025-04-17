@@ -2,3 +2,4 @@ dbt_packages/
 target/
 __pycache__/
 .user.yml
+package-lock.yml

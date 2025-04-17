@@ -24,3 +24,48 @@ docker compose up airflow-init
 ```bash
 docker compose up
 ```
+
+6. Install dbt-deps (`dbt_utils`):
+```bash
+docker-compose exec airflow-webserver dbt deps --project-dir /opt/airflow/dbt/
+```
+
+
+### Re-build compose
+```bash
+# Stop and remove all containers and volumes
+# -v: removes named volumes (MySQL and Postgres data)
+# --remove-orphans: cleans up any lingering containers
+docker compose down -v --remove-orphans
+ 
+# to force-rebuild the Airflow image:
+docker compose build --no-cache
+ 
+# startup & re-initialize Airflow DB and MySQL
+docker compose up airflow-init
+ 
+# starts everything
+# including:
+    # MySQL (which will now run init.sql again),
+    # Redis, Postgres,
+    # Airflow webserver, scheduler, worker, etc.
+docker compose up
+```
+
+
+### Check dbt
+```bash
+# connect to Airflow container
+docker-compose exec airflow-webserver bash
+
+cd /opt/airflow/dbt/spotify_dbt/
+dbt debug
+```
+
+### Check database
+```bash
+docker-compose exec mysql mysql -uairflow -p
+USE spotify;
+SHOW TABLES;
+SELECT * FROM source_spotify_tracks;
+```
