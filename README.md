@@ -1,5 +1,7 @@
 # Your first data engineering pipeline (Airflow + dbt)!
 
+Read the full [tutorial on Medium](https://ijaniszewski.medium.com/your-first-data-engineering-pipeline-airflow-dbt-spotify-release-radar-songs-65fd36cd1670)
+
 ## Spotify Release Radar songs
 
 1. Create an app from Spotify Developer account. Get Client ID and secret. Create `.env` file (same as `.env.example`):
